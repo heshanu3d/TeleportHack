@@ -180,17 +180,21 @@ def load_list_view(file_name: str, table_id : int):
             return
         for i in range(int(len(lines) / 4)):
             row = dpg.add_table_row(parent=table_id)
+            popup = dpg.add_popup(no_move=True, parent=row)
+            dpg.add_selectable(label="edit", callback=listview_edit_cb, parent=popup)
             for j in range(4):
                 if j > 0:
                     f = float(lines[i * 4 + j])
                     dpg.add_text("%0.3f" % f, parent=row)
+                    # dpg.add_selectable(label="%0.3f" % f, parent=row)
                 else:
                     # dpg.add_text(lines[i*4 + j])
                     btn = dpg.add_button(label=lines[i * 4 + j], width=300, callback=teleport_cb, parent=row)
                     # data = [lines[i*4 + j + 1], lines[i*4 + j + 2], lines[i*4 + j + 3]]
                     # dpg.set_item_user_data(btn, data)
                     teleport_dict.insert(lines[i * 4 + j].strip(), btn)
-
+def listview_edit_cb():
+    print("listview_edit_cb")
 
 def teleport_cb(sender, app_data, user_data):
     print(f"----------------------[teleport_cb] execute: ---------------------------\nsender: {sender}, \t app_data: {app_data}, \t user_data: {user_data}")
@@ -256,7 +260,7 @@ if __name__ == "__main__":
     dpg.create_context()
 
     debug_mode = True
-    debug_mode = False
+    # debug_mode = False
 
     teleport_dict = TeleportDict()
 
