@@ -1,7 +1,7 @@
 # coding: utf-8
 
 import os, re
-from xmlrpc.client import Boolean
+from typing import List, Any, Callable, Union, Tuple
 import dearpygui.dearpygui as dpg
 import dearpygui.demo as demo
 
@@ -55,7 +55,7 @@ def _add_config_options(item, columns, *names, **kwargs):
         dpg.pop_container_stack()
 
 
-def show_debug_editor(is_show: Boolean) -> int:
+def show_debug_editor(is_show: bool) -> int:
     if is_show:
         dpg.show_style_editor()
         demo.show_demo()
@@ -114,7 +114,7 @@ def set_theme(themes: list):
     themes.append(border_theme)
 
 
-def set_font(debug: Boolean):
+def set_font(debug: bool):
     size = 20
     with dpg.font_registry():
         with dpg.font('NotoSansSC-Regular.otf', size, default_font=True) as simple_chinese_font:
@@ -172,16 +172,33 @@ class TeleportDict():
             print(k, v)
 
 
+def add_popup(parent: Union[int, str], mousebutton: int = dpg.mvMouseButton_Right, modal: bool=False, tag:Union[int, str]=0, min_size:Union[List[int], Tuple[int, ...]]=[0, 80], max_size: Union[List[int], Tuple[int, ...]] =[30000, 30000], no_move: bool=False, no_background: bool=False) -> int:
+    if tag == 0:
+        _internal_popup_id = dpg.generate_uuid()
+    else:
+        _internal_popup_id = tag
+    _handler_reg_id = dpg.add_item_handler_registry()
+    dpg.add_item_clicked_handler(mousebutton, parent=dpg.last_item(), callback=lambda: dpg.configure_item(_internal_popup_id, show=True))
+    dpg.bind_item_handler_registry(parent, _handler_reg_id)
+    if modal:
+        return dpg.add_window(modal=True, show=False, tag=_internal_popup_id, autosize=True, min_size=min_size, max_size=max_size, no_move=no_move, no_background=no_background)
+    else:
+        return dpg.add_window(popup=True, show=False, tag=_internal_popup_id, autosize=True, min_size=min_size, max_size=max_size, no_move=no_move, no_background=no_background)
+
+
 def load_list_view(file_name: str, table_id : int):
     with open(file_name, 'r', encoding='utf-8') as file:
         lines = file.readlines()
         if len(lines) % 4 != 0:
             print(f"{file_name} lines count wrong")
             return
+        btn = 0
         for i in range(int(len(lines) / 4)):
             row = dpg.add_table_row(parent=table_id)
-            popup = dpg.add_popup(no_move=True, parent=row)
-            dpg.add_selectable(label="edit", callback=listview_edit_cb, parent=popup)
+            # popup = dpg.add_popup(no_move=True, parent=row)
+            if btn != 0:
+                popup = add_popup(btn, no_move=True, no_background=True)
+                dpg.add_selectable(label="edit", callback=listview_edit_cb, parent=popup)
             for j in range(4):
                 if j > 0:
                     f = float(lines[i * 4 + j])
@@ -193,8 +210,11 @@ def load_list_view(file_name: str, table_id : int):
                     # data = [lines[i*4 + j + 1], lines[i*4 + j + 2], lines[i*4 + j + 3]]
                     # dpg.set_item_user_data(btn, data)
                     teleport_dict.insert(lines[i * 4 + j].strip(), btn)
+
+
 def listview_edit_cb():
     print("listview_edit_cb")
+
 
 def teleport_cb(sender, app_data, user_data):
     print(f"----------------------[teleport_cb] execute: ---------------------------\nsender: {sender}, \t app_data: {app_data}, \t user_data: {user_data}")
@@ -241,6 +261,8 @@ def refresh_cb():
     # for child in dpg.get_item_children(functional_tab):
     #     dpg.delete_item(child)
 
+def click_cb():
+    print("Clicked!")
 
 def create_functional_tab(root):
     dpg.add_text("list_view", parent=root)
@@ -255,12 +277,15 @@ def create_functional_tab(root):
     dpg.add_table_column(label="Z", parent=table_id)
     load_list_view('favlist.fav', table_id)
 
+    # handle_reg_id = dpg.add_item_clicked_handler(parent=table_id, callback=click_cb)
+    # dpg.bind_item_handler_registry(table_id, handle_reg_id)
+
 
 if __name__ == "__main__":
     dpg.create_context()
 
     debug_mode = True
-    # debug_mode = False
+    debug_mode = False
 
     teleport_dict = TeleportDict()
 
@@ -278,17 +303,6 @@ if __name__ == "__main__":
             with dpg.tab(label="functional"):
                 with dpg.child_window(width=600, height=500) as functional_tab:
                     create_functional_tab(functional_tab)
-                    # dpg.add_text("list_view")
-                    # with dpg.table(header_row=True, row_background=True, resizable=True,
-                    #                borders_innerH=True, borders_outerH=True, borders_innerV=True,
-                    #                borders_outerV=True, delay_search=True, policy=dpg.mvTable_SizingFixedFit,
-                    #                no_pad_innerX=True
-                    #                ) as table_id:
-                    #     dpg.add_table_column(label="描述")
-                    #     dpg.add_table_column(label="X")
-                    #     dpg.add_table_column(label="Y")
-                    #     dpg.add_table_column(label="Z")
-                    #     load_list_view('favlist.fav')
 
                 with dpg.child_window(width=600, height=100):
                     dpg.add_text("button region")
